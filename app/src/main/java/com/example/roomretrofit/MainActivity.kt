@@ -1,14 +1,16 @@
 package com.example.roomretrofit
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.google.gson.Gson
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import com.example.roomretrofit.UserRetrofit as UserRetrofit1
@@ -35,34 +37,62 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         val db = Room.databaseBuilder(
-            this,
+            this@MainActivity,
             AppDatabase::class.java, "users_db"
         ).build()
 
         val userDao = db.userDao()
 
         val service: UserRetrofit1 = retrofit.create(UserRetrofit1::class.java)
-        val call = service.getUsers()
 
-        call.enqueue(object: Callback<List<UsersTable>>{
-            override fun onResponse(call: Call<List<UsersTable>>?, response: Response<List<UsersTable>>) {
-                if (response.code() == 200) {
-                    db.userDao().pushUser(response.body()!!)
+        val user1: MutableLiveData<UsersTable> = MutableLiveData()
+        val user2: MutableLiveData<UsersTable> = MutableLiveData()
+        val user3: MutableLiveData<UsersTable> = MutableLiveData()
+
+        user1.observe(this, { usersTable ->
+            usersTable?.let { nonNullUsersTable ->
+                textView1.text = "id: " + nonNullUsersTable.userId + " title: " + nonNullUsersTable.title + " completed: " + nonNullUsersTable.completed
+            }
+        })
+        user2.observe(this, { usersTable ->
+            usersTable?.let { nonNullUsersTable ->
+                textView2.text = "id: " + nonNullUsersTable.userId + " title: " + nonNullUsersTable.title + " completed: " + nonNullUsersTable.completed
+            }
+        })
+        user3.observe(this, { usersTable ->
+            usersTable?.let { nonNullUsersTable ->
+                textView3.text = "id: " + nonNullUsersTable.userId + " title: " + nonNullUsersTable.title + " completed: " + nonNullUsersTable.completed
+            }
+        })
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                if (cacheUserTable(service, userDao)) {
+                    withContext(Dispatchers.Main) {
+                        user1.value = userDao.getUser(1)
+                        user2.value = userDao.getUser(2)
+                        user3.value = userDao.getUser(3)
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Retro_root_ide_package_.com.example.roomretrofit.UsersTable",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             }
-            override fun onFailure(call: Call<List<UsersTable>>, t: Throwable) {
-                Toast.makeText(this@MainActivity, "Retro_root_ide_package_.com.example.roomretrofit.UsersTable", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    suspend fun cacheUserTable(service: UserRetrofit1, dao: UserDao): Boolean {
+        val retrofitResponse = service.getUsers()
+        if (retrofitResponse.isSuccessful) {
+            retrofitResponse.body()?.let { data ->
+                dao.pushUser(data)
             }
-
-        })
-
-
-        val user1: UsersTable = userDao.getUser(1)
-        val user2: UsersTable = userDao.getUser(2)
-        val user3: UsersTable = userDao.getUser(3)
-
-        textView1.setText("id: " + user1.userId + " title: " + user1.title + " completed: " + user1.completed)
-        textView2.setText("id: " + user2.userId + " title: " + user2.title + " completed: " + user2.completed)
-        textView3.setText("id: " + user3.userId + " title: " + user3.title + " completed: " + user3.completed)
+            return true
+        }
+        return false
     }
 }

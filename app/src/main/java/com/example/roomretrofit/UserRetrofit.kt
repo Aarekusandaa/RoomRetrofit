@@ -1,10 +1,9 @@
 package com.example.roomretrofit
 
-import retrofit2.Call
+import retrofit2.Response
 import retrofit2.http.GET
 
-public interface UserRetrofit {
-
+interface UserRetrofit {
     @GET("users/1/todos")
-    fun getUsers (): Call<List<UsersTable>>
+    suspend fun getUsers(): Response<List<UsersTable>>
 }

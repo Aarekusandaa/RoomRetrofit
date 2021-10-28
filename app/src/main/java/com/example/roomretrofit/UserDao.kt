@@ -8,10 +8,10 @@ import androidx.room.Query
 @Dao
 interface UserDao {
 
-    @Query ("SELECT * FROM Users WHERE id = :id")
-    fun getUser(id: Int) : UsersTable
+    @Query("SELECT * FROM Users WHERE id = :id")
+    suspend fun getUser(id: Int): UsersTable
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun pushUser(usersList: List<UsersTable>)
+    suspend fun pushUser(usersList: List<UsersTable>)
 }
 
