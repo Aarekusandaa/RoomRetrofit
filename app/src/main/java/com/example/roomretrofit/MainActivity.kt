@@ -42,9 +42,7 @@ class MainActivity : AppCompatActivity() {
         ).build()
 
         val userDao = db.userDao()
-
         val service: UserRetrofit1 = retrofit.create(UserRetrofit1::class.java)
-
         val user1: MutableLiveData<UsersTable> = MutableLiveData()
         val user2: MutableLiveData<UsersTable> = MutableLiveData()
         val user3: MutableLiveData<UsersTable> = MutableLiveData()
